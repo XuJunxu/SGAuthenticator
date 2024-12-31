@@ -776,7 +776,7 @@
 
     if (typeof unsafeWindow.g_steamID != 'undefined' && unsafeWindow.g_steamID) {
         userSteamID = unsafeWindow.g_steamID;
-    } else if ((STEAM_CLIENT || document.querySelector('#account_dropdown .persona')) && (!STEAMPP || unsafeWindow.location.href.indexOf('steamcommunity.com') !== -1)) {
+    } else if ((STEAM_CLIENT || document.querySelector('#account_dropdown .account_name')) && (!STEAMPP || unsafeWindow.location.href.indexOf('steamcommunity.com') !== -1)) {
         request({
             method: 'GET',
             url: 'https://steamcommunity.com/my/?xml=1',
@@ -791,7 +791,7 @@
         });
     } 
 
-    if (AUTOCODE && !STEAM_CLIENT && (!document.querySelector('#account_dropdown .persona') || unsafeWindow.location.href.indexOf('checkout.steampowered.com/login/?purchasetype=') !== -1)) {
+    if (AUTOCODE && !STEAM_CLIENT && (!document.querySelector('#account_dropdown .account_name') || unsafeWindow.location.href.indexOf('checkout.steampowered.com/login/?purchasetype=') !== -1)) {
         mutationObserver.observe(document.body, {childList: true, subtree: true});
     }
 
