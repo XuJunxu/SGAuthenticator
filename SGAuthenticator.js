@@ -343,12 +343,14 @@
             loadConfirmationInfo(account, modal);
         });
 
-        $content.find('#accept_conf').on('click', function() {
-            sendConfirmationData(account, 'allow', modal)
+        $content.find('#accept_conf').on('click', async function() {
+            await sendConfirmationData(account, 'allow', modal);
+            loadConfirmationInfo(account, modal);
         });
 
-        $content.find('#reject_conf').on('click', function() {
-            sendConfirmationData(account, 'cancel', modal)
+        $content.find('#reject_conf').on('click', async function() {
+            await sendConfirmationData(account, 'cancel', modal);
+            loadConfirmationInfo(account, modal);
         });
 
         loadConfirmationInfo(account, modal);
