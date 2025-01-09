@@ -19,6 +19,7 @@
 // @exclude      http*://steamcommunity.com/*/logout/
 // @exclude      http*://store.steampowered.com/widget/*
 // @exclude      http*://steamcommunity.com/mobileconf/detailspage/*
+// @exclude      http*://steamcommunity.com/chat*
 // @grant        unsafeWindow
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -108,45 +109,31 @@
 
     function steamGuardAuthenticatorButtons() {
         var buttons = document.createElement('div');
-        buttons.innerHTML = `<div class="guard_float_buttons" id="guard_confirmation"><img src=${confirmImg}><div>确认</div></div>
-                             <div class="guard_float_buttons" id="guard_auth_code"><img src=${guardImg}><div>令牌</div></div>
-                             <div class="guard_float_buttons" id="guard_reload_page"><img src=${reloadImg}><div>刷新</div></div>
-                             <div class="guard_float_buttons" id="guard_scroll_top"><img src=${topImg}><div>TOP</div></div>`;
+        buttons.id = 'guard_buttons_container';
+        buttons.innerHTML = `<div class="guard_float_buttons" id="guard_confirmation"><img src=${confirmImg}><div class="guard_btn_name">确认</div></div>
+                             <div class="guard_float_buttons" id="guard_auth_code"><img src=${guardImg}><div class="guard_btn_name">令牌</div></div>
+                             <div class="guard_float_buttons" id="guard_reload_page"><img src=${reloadImg}><div class="guard_btn_name">刷新</div></div>
+                             <div class="guard_float_buttons" id="guard_scroll_top"><img src=${topImg}><div class="guard_btn_name">TOP</div></div>`;
 
-        buttons.setAttribute('style', 'user-select: none; position: fixed; right: 6px; top: 50%; z-index: 500; color: #b8b6b4; background-color: #3b4b5f; font-size: 12px; border-radius: 2px; box-shadow: 0 0 4px 0 #00000066;');
+        buttons.setAttribute('style', '');
         document.body.appendChild(buttons);
 
         var dropdown = document.createElement('div');
         dropdown.className = 'popup_block_new';
         dropdown.id = 'SG_Authenticator_dropdown';
-        dropdown.setAttribute('style', 'display: none; position: fixed; top: 50%; right: 50px; z-index: 500; user-select: none;');
+        dropdown.setAttribute('style', 'display: none;');
         document.body.appendChild(dropdown);
 
         var popupMenu = document.createElement('div');
         popupMenu.className = 'popup_body popup_menu';
-        popupMenu.setAttribute('style', 'overflow-y: auto; max-height: calc(100vh - 50px);');
+        popupMenu.setAttribute('style', 'overflow-y: auto; max-height: calc(100vh - 70px);');
         dropdown.appendChild(popupMenu);
 
-        popupMenu.innerHTML = `<a class="SG_popup_menu_item" id="SG_manage_account"><span class="SG_popup_menu_item_name">管理账号</span></a>
-                               <a class="SG_popup_menu_item" id="SG_auto_input_code">
+        popupMenu.innerHTML = `<div class="SG_popup_menu_item" id="SG_manage_account"><span class="SG_popup_menu_item_name">管理账号</span></div>
+                               <div class="SG_popup_menu_item" id="SG_auto_input_code">
                                <label class="SG_popup_menu_item_name has_right_btn" for="auto_input_code_checkbox">自动输入验证码</label>
-                               <input class="SG_popup_menu_item_btn" id="auto_input_code_checkbox" type="checkbox" ${AUTOCODE ? "checked=true" : ""}></a>
+                               <input class="SG_popup_menu_item_btn" id="auto_input_code_checkbox" type="checkbox" ${AUTOCODE ? "checked=true" : ""}></div>
                                <div id="account_list_container"></div>`;
-
-        var accountDropdown = document.createElement('div');
-        accountDropdown.className = 'popup_block_new';
-        accountDropdown.id = 'SG_manage_account_dropdown';
-        accountDropdown.setAttribute('style', 'display: none; position: absolute; user-select: none;');
-        dropdown.appendChild(accountDropdown);
-
-        var accountMenu = document.createElement('div');
-        accountMenu.className = 'popup_body popup_menu';
-        accountMenu.setAttribute('style', 'overflow-y: auto; max-height: calc(100vh - 50px);');
-        accountDropdown.appendChild(accountMenu);
-
-        accountMenu.innerHTML = `<a class="SG_popup_menu_item"><span class="SG_popup_menu_item_name" id="SG_add_account">添加账号</span></a>
-                                 <a class="SG_popup_menu_item"><span class="SG_popup_menu_item_name" id="SG_import_account">导入账号</span></a>
-                                 <a class="SG_popup_menu_item"><span class="SG_popup_menu_item_name" id="SG_delete_account">删除账号</span></a>`;
 
         buttons.querySelector('#guard_confirmation').onclick = function() {
             showConfirmationDialog();
@@ -164,12 +151,8 @@
             unsafeWindow.scroll(0, 0);
         };
 
-        unsafeWindow.onresize = function() {
-            var $elem = $J(dropdown);
-            $elem.css('top', `calc(50% - ${$elem.height() / 2}px)`);
-        };
-
         popupMenu.querySelector('#SG_manage_account').onclick = function() {
+            hideAuthenticatorPopupMenu();
             showManageAccountDialog();
         };
 
@@ -186,22 +169,6 @@
             AUTOCODE = this.checked;
             GM_setValue('SG_AUTO_INPUT_CODE', AUTOCODE);
         };
-
-        accountMenu.onclick = function(e) {
-            var elem = e.target;
-            if (elem.id == 'SG_add_account') {
-                showAddAccountDialog();
-                hideAuthenticatorPopupMenu();
-            } else if (elem.id == 'SG_import_account') {
-                showImportAccountDialog();
-                hideAuthenticatorPopupMenu();
-            } else if (elem.id == 'SG_delete_account') {
-                showManageAccountDialog();
-                hideAuthenticatorPopupMenu();
-            }
-        }
-
-        buttons.style.marginTop = `calc(-${unsafeWindow.getComputedStyle(buttons).height} / 2)`;
     }
 
     function showAuthenticatorPopupMenu() {
@@ -225,22 +192,21 @@
         var html = '';
         for (var i=0; i<getFileAccounts().length; i++) {
             var account = getFileAccounts()[i];
-            html += `<a class="SG_popup_menu_item">
-                     <span class="account_name SG_popup_menu_item_name" data-tooltip-text="点击复制该账号的验证码" data-gid=${i} data-name=${account.account_name} data-time=${time}>${account.account_name || account.steamid || '???'}</span></a>`;
+            html += `<div class="SG_popup_menu_item">
+                     <span class="account_name SG_popup_menu_item_name" data-tooltip-text="点击显示并复制验证码" data-gid=${i} data-name=${account.account_name} data-time=${time}>${account.account_name || account.steamid || '???'}</span></div>`;
         }
 
         for (var i=0; i<ACCOUNTS.length; i++) {
             var account = ACCOUNTS[i];
-            html += `<a class="SG_popup_menu_item">
-                     <span class="account_name SG_popup_menu_item_name" data-tooltip-text="点击复制该账号的验证码" data-id=${i} data-name=${account.account_name} data-time=${time}>${account.account_name || account.steamid || '???'}</span>
-                     <span class="remove_account SG_popup_menu_item_btn" data-tooltip-text="删除该账号" data-id=${i} data-name=${account.account_name}></span></a>`;
+            html += `<div class="SG_popup_menu_item">
+                     <span class="account_name SG_popup_menu_item_name" data-tooltip-text="点击显示并复制验证码" data-id=${i} data-name=${account.account_name} data-time=${time}>${account.account_name || account.steamid || '???'}</span>
+                     <span class="remove_account SG_popup_menu_item_btn" data-tooltip-text="删除该账号" data-id=${i} data-name=${account.account_name}></span></div>`;
         }
         
         var accountList = popupMenu.querySelector('#account_list_container');
         accountList.innerHTML = html;
         setupTooltips($J(accountList));
 
-        $popup.css('top', `calc(50% - ${$popup.height() / 2}px)`);
         ShowWithFade($popup);
         $Link.addClass('focus');
         RegisterPopupDismissal(function() { hideAuthenticatorPopupMenu(); }, $popup);
@@ -248,31 +214,6 @@
 
     function hideAuthenticatorPopupMenu() {
         HideMenu('guard_auth_code', 'SG_Authenticator_dropdown');
-        hideManageAccountPopupMenu();
-    }
-
-    function showManageAccountPopupMenu() {
-        var $Link = $J('#SG_manage_account');
-        var $popup = $J('#SG_manage_account_dropdown');
-
-        if ($Link.hasClass('focus')) {
-            hideManageAccountPopupMenu();
-            return;
-        }
-
-        var pos = $Link.position();
-
-        $popup.css('left', `${pos.left - $popup.width() - 1}px`);
-        $popup.css('top', `${pos.top}px`);
-        ShowWithFade($popup);
-        $Link.addClass('focus');
-    }
-
-    function hideManageAccountPopupMenu() {
-        var $Link = $J('#SG_manage_account');
-        var $popup = $J('#SG_manage_account_dropdown');
-        HideWithFade($popup);
-        $Link.removeClass('focus');
     }
 
     function showAddAccountDialog(func) {
@@ -287,6 +228,7 @@
 
         var modal = unsafeWindow.ShowConfirmDialog('添加账号', content, '确定', '取消');
         var $content = modal.GetContent();
+        $content.addClass('SG_new_dialog');
         $content[0].id = 'SG_add_account_dialog';
         setupTooltips($content);
         modal.done(function() {
@@ -310,9 +252,12 @@
     function showImportAccountDialog(func) {
         var modal = unsafeWindow.ShowConfirmDialog('导入账号', '<textarea></textarea>', '确定', '取消');
         var $content = modal.GetContent();
+        $content.addClass('SG_new_dialog');
         $content[0].id = 'SG_import_account_dialog';
+
         var $textarea = $content.find('textarea');
         $textarea.attr('placeholder', '将要导入的数据粘贴于此');
+
         modal.done(function() {
             var text = $textarea.val();
             var account_list = [];
@@ -389,64 +334,55 @@
     }
 
     function showManageAccountDialog() {
-        var content = `<div id="SG_action_container">
-                       <a class="SG_action_btn" id="SG_add_account_btn">添加账号</a>
-                       <a class="SG_action_btn" id="SG_import_account_btn">导入账号</a>
-                       <a class="SG_action_btn" id="SG_select_all_btn" style="float: right; margin: 0;">全选</a>
-                       <a class="SG_action_btn" id="SG_reverse_select_btn" style="float: right;">反选</a>
-                       <a class="SG_action_btn" id="SG_delete_account_btn" style="float: right;">删除</a></div>
+        var content = `<div id="SG_manage_account_container">
+                       <div id="SG_action_container">
+                       <div>
+                       <div class="SG_action_btn" id="SG_add_account_btn">添加</div>
+                       <div class="SG_action_btn" id="SG_import_account_btn">导入</div>
+                       </div>
+                       <div style="margin-left: 6px;">
+                       <div class="SG_action_btn" id="SG_select_all_btn">全选</div>
+                       <div class="SG_action_btn" id="SG_reverse_select_btn">反选</div>
+                       <div class="SG_action_btn" id="SG_delete_account_btn">删除</div>
+                       </div></div>
                        <div class="SG_v_separator"></div>
-                       <div id="SG_edit_accounts_container"></div>`;
+                       <div id="SG_edit_accounts_container"></div></div>`;
 
-        var modal = unsafeWindow.ShowDialog('管理账号', content, '保存', '取消');
+        var modal = unsafeWindow.ShowDialog('管理账号', content);
         var $content = modal.GetContent();
+        $content.addClass('SG_new_dialog');
         var $accounts = $content.find('#SG_edit_accounts_container');
 
-        var lastEnter = null;
-        var currentTop = '';
+        var touchStartY = 0;
+        var touchStartTop = 0;
 
         $accounts[0].ondragstart = function(event) {
+            var target = event.target.parentNode;
             event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.setDragImage(document.createElement('div'), 0, 0);
-            event.target.parentNode.classList.add('dragging');
-            currentTop = event.target.parentNode.style.top;
-            lastEnter = null;
+            target.classList.add('dragging');
         };
 
         $accounts[0].ondrag = function(event) {
             if (event.offsetY < 0) {
                 return;
             }
+
             var target = event.target.parentNode;
             var $target = $J(target);
-            var dragY = $target.position().top + event.offsetY;
-            var top = dragY - $target.height() / 2 + $accounts[0].scrollTop;
+            var top = $target.position().top + event.offsetY - $target.height() / 2 + $accounts[0].scrollTop;
             target.style.top = top + 'px';
 
-            var overItem;
-            var accountItems = $accounts.find('.edit_account_item');
-            for (var i = 0; i < accountItems.length; i++ ) {
-                var item = accountItems[i];
-                if (item != target) {
-                    var top2 = $J(item).position().top;
-                    if (dragY >= top2 && dragY < top2 + $J(item).height()) {
-                        overItem = item;
-                        break;
-                    }
-                }
-            }
-
-            if (!overItem) {
-                lastEnter = null;
-            } else if (lastEnter != overItem) {
-                currentTop = swapItem(target, overItem, currentTop);
-                lastEnter = overItem;
+            var overItem = checkOverOtherItem(target);
+            if (overItem) {
+                swapItem(target, overItem);
             }
         };
 
         $accounts[0].ondragend = function(event) {
-            event.target.parentNode.style.top = currentTop;
-            event.target.parentNode.classList.remove('dragging');
+            var target = event.target.parentNode;
+            target.style.top = target.getAttribute('data-top') + 'px';
+            target.classList.remove('dragging');
             saveAccountList();
         };
 
@@ -458,6 +394,45 @@
             event.preventDefault();
             event.dataTransfer.dropEffect = 'move';
         } 
+
+        $accounts[0].ontouchstart = function(event) {
+            if (event.target.classList.contains('account_sort_handle')) {
+                var target = event.target.parentNode;
+                target.classList.add('dragging');
+                var rect = target.getBoundingClientRect();
+                touchStartY = rect.top + rect.height / 2;
+                touchStartTop = $J(target).position().top;
+                return false;
+            }
+        };
+
+        $accounts[0].ontouchmove = function(event) {
+            if (event.target.classList.contains('account_sort_handle')) {
+                if (touchStartY < 0) {
+                    return false;
+                }
+
+                var target = event.target.parentNode;
+                var top = touchStartTop + event.touches[0].clientY - touchStartY + $accounts[0].scrollTop;
+                target.style.top = top + 'px';
+                
+                var overItem = checkOverOtherItem(target);
+                if (overItem) {
+                    swapItem(target, overItem);
+                } 
+                return false;
+            }
+        };
+
+        $accounts[0].ontouchend = function(event) {
+            if (event.target.classList.contains('account_sort_handle')) {
+                var target = event.target.parentNode;
+                target.style.top = target.getAttribute('data-top') + 'px';
+                target.classList.remove('dragging');
+                saveAccountList();
+                return false;
+            }
+        };
 
         $content.find('#SG_add_account_btn').on('click', function() {
             showAddAccountDialog(showAccountList);
@@ -495,8 +470,8 @@
         });
 
         modal.OnResize(function(maxWidth, maxHeight) {
-            var height = Math.min(maxHeight - 75, $content.find('.edit_account_item').length * 40 - 6);
-			$content.find('#SG_edit_accounts_container').css('height', height + 'px');
+            $content.find('#SG_action_container').css('transform', `scale(${Math.min(1, (document.documentElement.clientWidth - 56) / 265)})`)
+            $accounts.height(Math.min(document.documentElement.clientHeight - 140 - $content.find('#SG_action_container').height(), $accounts[0].scrollHeight));
 		});
         
         function saveAccountList() {
@@ -521,55 +496,77 @@
             }
             
             var itemTop = 0;
+            var lineHeight = 40;
             for (var account of ACCOUNTS) {
-                var lineHeight = 40;
                 var elemAcct = document.createElement('div');
                 elemAcct.className = 'edit_account_item';
                 elemAcct.innerHTML = `<div draggable="true" class="account_sort_handle"><img src="${sortImg}"></div>
-                                      <span class="account_item_name">${account.account_name || account.steamid || '???'}</span>
+                                      <div class="account_item_name">${account.account_name || account.steamid || '???'}</div>
                                       <input type="checkbox"  class="account_item_checkbox">`;
                 elemAcct.account = account;
                 elemAcct.style.top = `${itemTop}px`;
+                elemAcct.setAttribute('data-top', itemTop);
                 itemTop += lineHeight;
                 container.append(elemAcct);
             };
+            var temp = document.createElement('div');
+            temp.style = `width: 1px; height: 1px; top: ${itemTop}px; position: absolute;`;
+            container.append(temp);
+
+            container.style.height = null;
             modal.AdjustSizing();
         }
-    }
 
-    function swapItem(item, target, curTop) {
-        var targetTop = target.style.top;
-        if (parseInt(curTop.replace('px', '')) > parseInt(target.style.top.replace('px', ''))) {
-            var preElem = item;
-            while(true) {
-                preElem = preElem.previousElementSibling;
-                var tempTop = preElem.style.top;
-                preElem.style.top = curTop;
-                curTop = tempTop;
-
-                if (preElem == target || !preElem.previousElementSibling) {
-                    break;
+        function checkOverOtherItem(target) {
+            var accountItems = $accounts.find('.edit_account_item');
+            for (var i = 0; i < accountItems.length; i++ ) {
+                var item = accountItems[i];
+                if (item != target) {
+                    if (Math.abs(parseInt(item.getAttribute('data-top')) - parseInt(target.style.top)) < $J(item).height() / 2) {
+                        return item;
+                    }
                 }
-            }
-            item.parentNode.insertBefore(item, target);
-        } else {
-            var nextElem = item;
-            while(true) {
-                nextElem = nextElem.nextElementSibling;
-                var tempTop = nextElem.style.top
-                nextElem.style.top = curTop;
-                curTop = tempTop;
-                if (nextElem == target || !nextElem.nextElementSibling) {
-                    break;
-                }
-            }
-            if (target.nextElementSibling) {
-                item.parentNode.insertBefore(item, target.nextElementSibling);
-            } else {
-                item.parentNode.append(item);
             }
         }
-        return targetTop;
+
+        function swapItem(target, item) {
+            var targetTop = target.getAttribute('data-top');
+            var itemTop = item.getAttribute('data-top');
+
+            if (parseInt(targetTop) > parseInt(itemTop)) {
+                var preElem = target;
+                while(true) {
+                    preElem = preElem.previousElementSibling;
+                    var tempTop = preElem.getAttribute('data-top');
+                    preElem.setAttribute('data-top', targetTop);
+                    preElem.style.top = targetTop + 'px';
+                    targetTop = tempTop;
+    
+                    if (preElem == item || !preElem.previousElementSibling) {
+                        break;
+                    }
+                }
+                item.parentNode.insertBefore(target, item);
+            } else {
+                var nextElem = target;
+                while(true) {
+                    nextElem = nextElem.nextElementSibling;
+                    var tempTop = nextElem.getAttribute('data-top');
+                    nextElem.setAttribute('data-top', targetTop);
+                    nextElem.style.top = targetTop + 'px';
+                    targetTop = tempTop;
+                    if (nextElem == item || !nextElem.nextElementSibling || !nextElem.nextElementSibling.classList.contains('edit_account_item')) {
+                        break;
+                    }
+                }
+                if (item.nextElementSibling) {
+                    item.parentNode.insertBefore(target, item.nextElementSibling);
+                } else {
+                    item.parentNode.append(target);
+                }
+            }
+            target.setAttribute('data-top', targetTop);
+        }
     }
 
     function showConfirmationDialog() {
@@ -590,8 +587,8 @@
             return;
         }
         var content = `<div id="confirmation_container" style="overflow: hidden; position: relative; font-size: 14px;">
-                       <div id="confirmation_message" style="display: none; font-size: 14px; font-weight: bold; text-align: center;"></div>
-                       <div id="confirmation_list" style="overflow-y: auto; max-width: 600px; min-height: 200px; max-height: calc(100vh - 220px);"></div>
+                       <div id="confirmation_message" style="display: none; position: absolute; width: 100%; font-size: 14px; font-weight: bold; text-align: center;"></div>
+                       <div id="confirmation_list" style="overflow-y: auto; min-height: 182px;"></div>
                        <div id="confirmation_actions">
                        <input id="select_all" type="button" value="全选" style="background-color: #588a1b">
                        <input id="reload_conf" type="button" value="刷新" style="background-color: #588a1b">
@@ -616,11 +613,12 @@
             if (all == 0 || all > checked) {
                 $content.find('#select_all').val('全选');
             } else {
-                $content.find('#select_all').val('取消全选');
+                $content.find('#select_all').val('反选');
             }
         };
 
         let $content = modal.GetContent();
+        $content.addClass('SG_new_dialog');
 
         $content.find('#confirmation_list').on('click', function(e) {
             var elem = e.target;
@@ -630,7 +628,11 @@
                 var cid = elem.getAttribute('data-cid');
                 var url = 'https://steamcommunity.com/mobileconf/detailspage/' + cid + '?' + generateConfirmationQueryParams(account, 'details' + cid, timeOffset);
                 if (unsafeWindow.location.hostname == 'steamcommunity.com') {
-                    unsafeWindow.ShowDialog('确认交易和市场', `<iframe src="${url}" style="height: 600px; width: 600px;"></iframe>`);
+                    var dlg = unsafeWindow.ShowDialog('确认交易和市场', `<iframe src="${url}"></iframe>`);
+                    var frame = dlg.GetContent().find('iframe');
+                    frame.width(Math.min(450, document.documentElement.clientWidth - 60));
+                    frame.height(document.documentElement.clientHeight - 130);
+                    dlg.AdjustSizing();
                 } else {
                     unsafeWindow.open(url, '_blank', 'height=790,width=600,resize=yes,scrollbars=yes');
                 }
@@ -663,7 +665,12 @@
             loadConfirmationInfo(account, modal);
         });
 
+        modal.OnResize(function() {
+            $content.find('#confirmation_list').css('max-height', (document.documentElement.clientHeight - 122 - $content.find('#confirmation_actions').height()) + 'px');
+        });
+
         loadConfirmationInfo(account, modal);
+        modal.AdjustSizing();
     }
 
     async function loadConfirmationInfo(account, modal) {
@@ -832,6 +839,7 @@
         if (timeout <= 0 ) {
             elem.textContent = elem.getAttribute('data-name');
             elem.parentNode.classList.remove('show_auth_code');
+            elem.parentNode.style.backgroundSize = null;
             return;
         }
         elem.parentNode.style.backgroundSize = `${(timeout / 30 * 100).toFixed(2)}%`;
@@ -939,8 +947,49 @@
     var styleElem = document.createElement('style');
     document.body.appendChild(styleElem);
     styleElem.innerHTML = `
+        #guard_buttons_container {
+            user-select: none; 
+            display: flex;
+            flex-direction: column;
+            position: fixed; 
+            right: 6px; 
+            top: 50%; 
+            z-index: 500; 
+            color: #b8b6b4; 
+            background-color: #3b4b5f; 
+            font-size: 12px; 
+            border-radius: 2px; 
+            box-shadow: 0 0 4px 0 #00000066;
+            transform: translateY(-50%);
+        }
+
+        @media screen and (max-width: 910px) {
+            #guard_buttons_container {
+                top: 6px;
+                transform: none;
+                flex-direction: row;
+                background: transparent;
+                box-shadow: none;
+            }
+
+            #guard_confirmation, #guard_auth_code {
+                padding: 10px;
+                width: auto;
+                border-bottom: none;
+            }
+
+            #guard_confirmation {
+                border-right: 1px solid #00000044;
+            }
+
+            #guard_reload_page, #guard_scroll_top, .guard_btn_name {
+                display: none;
+            }
+        }
+
         .guard_float_buttons {
             width: 40px;
+            padding-top: 8px;
             text-align: center;
             cursor: pointer;
         }
@@ -954,22 +1003,37 @@
             width: 20px;
             height: 20px;
             display: inline-block;
-            margin-top: 8px;
             vertical-align: middle;
         }
         .guard_float_buttons div {
             padding: 5px 0px;
             font-family: "Motiva Sans",Arial,Helvetica,sans-serif;
         }
+
+        #SG_Authenticator_dropdown {
+            position: fixed; 
+            top: 50%; 
+            right: 50px; 
+            z-index: 500; 
+            user-select: none;
+            transform: translateY(-50%);
+        }
+
+        @media screen and (max-width: 910px) {
+            #SG_Authenticator_dropdown { 
+                right: 6px;
+                top: 50px;
+                transform: none;
+            }
+        }
+
         #SG_Authenticator_dropdown .SG_popup_menu_item {
             display: block;
             text-decoration: none;
             position: relative; 
             padding: 0;
             cursor: pointer;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            max-width: 150px;
         }
         #SG_Authenticator_dropdown .SG_popup_menu_item_name {
             display: block; 
@@ -982,6 +1046,9 @@
             text-decoration: none;
             font-family: "Motiva Sans",Arial,Helvetica,sans-serif;
             cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         #SG_Authenticator_dropdown .SG_popup_menu_item_btn {
             position: absolute;
@@ -1007,14 +1074,13 @@
             padding: 5px 27px 5px 12px; 
         }
         #SG_Authenticator_dropdown .SG_popup_menu_item.focus, #SG_Authenticator_dropdown .SG_popup_menu_item.focus .SG_popup_menu_item_name, #SG_Authenticator_dropdown .SG_popup_menu_item:hover, #SG_Authenticator_dropdown .SG_popup_menu_item:hover .SG_popup_menu_item_name {
-            color: #171d25;
-            background: #dcdedf;
+            background: #0000002F;
         }
         #SG_Authenticator_dropdown .remove_account.SG_popup_menu_item_btn {
             display: none;
         }
         .copy_code_success {
-            color: #57cbde !important;
+            color: white !important;
         }
         .show_auth_code {
             background: linear-gradient(#1a73e8cc, #1a73e8cc) no-repeat;
@@ -1026,18 +1092,18 @@
             border-bottom: 1px solid black;
         }
         .mobile_conf_item_checkbox {
-            transform-origin: left;
-            transform: scale(2);
-            margin-left: 10px;
+            margin-left: 6px;
             display: flex;
         }
         .mobile_conf_item_checkbox input{
+            transform-origin: left;
+            transform: scale(1.5);
             cursor: pointer;
             margin: 0;
         }
         .mobile_conf_item_icon {
-            margin-right: 15px;
-            margin-left: 30px;
+            margin-right: 10px;
+            margin-left: 15px;
             height: 64px;
             width: 64px;
         }
@@ -1047,6 +1113,8 @@
         }
         .mobile_conf_item_info {
             cursor: pointer;
+            margin: 5px 0;
+            flex: auto;
         }
         .mobile_conf_item_time {
             font-size: 12px;
@@ -1065,17 +1133,19 @@
             pointer-events: none;
         }
         #confirmation_actions {
-            margin: 12px 0px 5px 5px;
+            display: flex;
+            justify-content: center;
         }
         #confirmation_actions input{
-            margin-right: 12px;
+            margin: 17px 3px 3px 3px;
             cursor: pointer;
             font-size: 14px;
             border: none;
             border-radius: 4px;
             color: white;
-            width: 80px;
-            height: 30px;
+            flex: auto;
+            max-width: 80px;
+            height: 28px;
             box-shadow: 2px 2px 2px #00000099;
         }
         #confirmation_actions input:hover {
@@ -1091,16 +1161,20 @@
         }
         #SG_action_container {
             margin-bottom: 0px;
+            display: flex;
+            justify-content: space-between;
+            transform-origin: left;
+            overflow: visible;
+            white-space: nowrap;
         }
         .SG_action_btn {
             color: white;
             padding: 0px 10px;
-            margin-right: 5px;
             background: #464d58;
             user-select: none;
             border-radius: 4px;
             box-shadow: 1px 1px 2px #00000066;
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
             display: inline-block;
             line-height: 26px;
@@ -1112,7 +1186,6 @@
             overflow: auto;
             min-height: 160px;
             position: relative;
-            width: 450px;
         }
         #SG_edit_accounts_container .edit_account_item {
             display: flex;
@@ -1125,8 +1198,9 @@
         }
         #SG_edit_accounts_container .edit_account_item.dragging { 
             z-index: 10;
-            background-color: #3d4b5a;
+            background-color: #4d5b6a;
             transition: background-color 300ms;
+            box-shadow: 0 0 4px 0 #00000066;
         }
         #SG_edit_accounts_container .account_sort_handle {
             cursor: move;
@@ -1136,12 +1210,16 @@
             height: 14px;
             vertical-align: middle;
             margin: 0 5px;
+            pointer-events: none;
         }
         #SG_edit_accounts_container .account_item_name {
             flex: auto;
             align-content: center;
-            margin: 0 8px;
-            font-size: 16px;
+            margin: 0 30px 0 8px;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         #SG_edit_accounts_container .account_item_checkbox {
             cursor: pointer;
@@ -1185,11 +1263,33 @@
             padding: 4px 8px 4px 8px;
         }
         #SG_import_account_dialog textarea {
-            width: 500px;
-            height: 400px;
+            width: 100%;
+            height: 100%;
             padding: 6px 8px 6px 8px;
             resize: none;
             margin-bottom: 2px;
+        }
+        #SG_import_account_dialog div.newmodal_content {
+            height: min(calc(100vh - 120px), 450px);
+        }
+        .SG_new_dialog div.newmodal_content > div:first-child {
+            flex: auto;
+        }
+        .SG_new_dialog div.newmodal_content {
+            display: flex;
+            flex-direction: column;
+            width: min(calc(100vw - 56px), 450px);
+            max-height: calc(100vh - 120px);
+        }
+        @media screen and (min-width: 340px) {
+            div.newmodal div.newmodal_content {
+                min-width: 280px;
+            }
+        }
+        @media screen and (max-width: 340px) {
+            div.newmodal div.newmodal_content {
+                min-width: max(calc(100vw - 56px), 100px);
+            }
         }
         .SG_v_separator {
             height: 1px;
