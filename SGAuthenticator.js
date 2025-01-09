@@ -1266,7 +1266,7 @@
 
     unsafeWindow.confirmSellItems = async function() {
         if (!userSteamID) {
-            return;
+            return false;
         }
 
         var account;
@@ -1277,11 +1277,12 @@
             }
         }
         if (!account) {
-            return;
+            return false;
         }
 
+        var res;
         try {
-            var res = await new Promise((resolve, reject) => {
+            res = await new Promise((resolve, reject) => {
                 request({
                     method: 'GET',
                     url: 'https://steamcommunity.com/mobileconf/getlist?' + generateConfirmationQueryParams(account, 'conf', timeOffset),
@@ -1294,47 +1295,51 @@
                     }
                 });
             });
-
-            if (res && res.success && res.conf && res.conf.length) {
-                var need_send = false;
-                var queryString = 'op=allow' + '&' + generateConfirmationQueryParams(account, 'allow', timeOffset);
-                for (var item of res.conf) {
-                    if (item.type == 3) {
-                        queryString += '&cid[]=' + item.id;
-                        queryString += '&ck[]=' + item.nonce;
-                        need_send = true;
-                    }
-                }
-
-                if (!need_send) {
-                    return;
-                }
-
-                try {
-                    var res = await new Promise((resolve, reject) => {
-                        request({
-                            method: 'POST',
-                            url: 'https://steamcommunity.com/mobileconf/multiajaxop',
-                            data: queryString,
-                            headers:    {
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            },
-                            responseType: 'json',
-                            onload: function(response) {
-                                resolve(response.response);
-                            },
-                            onerror: function(error) {
-                                reject(error);
-                            }
-                        });
-                    });
-                } catch(err) {
-                    console.log('发送确认信息失败');
-                }
-            }
         } catch(err) {
             console.log('获取确认信息失败');
         }
+
+        if (res && res.success && res.conf && res.conf.length) {
+            var need_send = false;
+            var queryString = 'op=allow' + '&' + generateConfirmationQueryParams(account, 'allow', timeOffset);
+            for (var item of res.conf) {
+                if (item.type == 3) {
+                    queryString += '&cid[]=' + item.id;
+                    queryString += '&ck[]=' + item.nonce;
+                    need_send = true;
+                }
+            }
+
+            if (!need_send) {
+                return false;
+            }
+
+            try {
+                var res2 = await new Promise((resolve, reject) => {
+                    request({
+                        method: 'POST',
+                        url: 'https://steamcommunity.com/mobileconf/multiajaxop',
+                        data: queryString,
+                        headers:    {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        responseType: 'json',
+                        onload: function(response) {
+                            resolve(response.response);
+                        },
+                        onerror: function(error) {
+                            reject(error);
+                        }
+                    });
+                });
+                if (res2 && res2.success) {
+                    return true;
+                }
+            } catch(err) {
+                console.log('发送确认信息失败');
+            }
+        }
+        return false;
     };
 
 })();
