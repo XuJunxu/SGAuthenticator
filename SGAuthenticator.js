@@ -571,7 +571,7 @@
 
     function showConfirmationDialog() {
         if (!userSteamID) {
-            unsafeWindow.ShowAlertDialog('确认交易和市场', '当前页面不支持确认交易和市场。', '确定');
+            unsafeWindow.ShowAlertDialog('确认信息', '当前页面不支持确认信息。', '确定');
             return;
         }
 
@@ -583,21 +583,23 @@
             }
         }
         if (!account) {
-            unsafeWindow.ShowAlertDialog('确认交易和市场', '当前账号不支持确认交易和市场。', '确定');
+            unsafeWindow.ShowAlertDialog('确认信息', '当前账号不支持确认信息。', '确定');
             return;
         }
         var content = `<div id="confirmation_container" style="overflow: hidden; position: relative; font-size: 14px;">
                        <div id="confirmation_message" style="display: none; position: absolute; width: 100%; font-size: 14px; font-weight: bold; text-align: center;"></div>
                        <div id="confirmation_list" style="overflow-y: auto; min-height: 182px;"></div>
                        <div id="confirmation_actions">
+                       <div class="buttons_group">
                        <input id="select_all" type="button" value="全选" style="background-color: #588a1b">
-                       <input id="reload_conf" type="button" value="刷新" style="background-color: #588a1b">
+                       <input id="reload_conf" type="button" value="刷新" style="background-color: #588a1b"></div>
+                       <div class="buttons_group" style="justify-content: right;">
                        <input id="accept_conf" type="button" value="确认" style="background-color: #175bb4" disabled="disabled">
                        <input id="reject_conf" type="button" value="取消" style="background-color: #464d58" disabled="disabled">
-                       </div>
+                       </div></div>
                        <div id="confirmation_waiting" style="display: none; position: absolute; top: 0px; bottom: 0px; left: 0px; right: 0px;">
                        <div style="background-color: #000000; color: #ffffff; font-size: 16px; border-radius: 4px; margin: auto; padding: 8px 12px;"></div></div></div>`;
-        var modal = unsafeWindow.ShowDialog('确认交易和市场', content);
+        var modal = unsafeWindow.ShowDialog('确认信息', content);
 
         modal.refreshBottons = function() {
             var $content = this.GetContent();
@@ -628,7 +630,7 @@
                 var cid = elem.getAttribute('data-cid');
                 var url = 'https://steamcommunity.com/mobileconf/detailspage/' + cid + '?' + generateConfirmationQueryParams(account, 'details' + cid, timeOffset);
                 if (unsafeWindow.location.hostname == 'steamcommunity.com') {
-                    var dlg = unsafeWindow.ShowDialog('确认交易和市场', `<iframe src="${url}"></iframe>`);
+                    var dlg = unsafeWindow.ShowDialog('确认详细信息', `<iframe src="${url}"></iframe>`);
                     var frame = dlg.GetContent().find('iframe');
                     frame.width(Math.min(450, document.documentElement.clientWidth - 60));
                     frame.height(document.documentElement.clientHeight - 130);
@@ -1135,6 +1137,10 @@
         #confirmation_actions {
             display: flex;
             justify-content: center;
+        }
+        #confirmation_actions .buttons_group {
+            display: flex;
+            flex: auto;
         }
         #confirmation_actions input{
             margin: 17px 3px 3px 3px;
