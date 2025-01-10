@@ -336,11 +336,11 @@
     function showManageAccountDialog() {
         var content = `<div id="SG_manage_account_container">
                        <div id="SG_action_container">
-                       <div>
+                       <div style="display: flex; flex: 2 2 auto;">
                        <div class="SG_action_btn" id="SG_add_account_btn">添加</div>
                        <div class="SG_action_btn" id="SG_import_account_btn">导入</div>
                        </div>
-                       <div style="margin-left: 6px;">
+                       <div style="display: flex; flex: 3 3 auto; justify-content: right;">
                        <div class="SG_action_btn" id="SG_select_all_btn">全选</div>
                        <div class="SG_action_btn" id="SG_reverse_select_btn">反选</div>
                        <div class="SG_action_btn" id="SG_delete_account_btn">删除</div>
@@ -470,7 +470,7 @@
         });
 
         modal.OnResize(function(maxWidth, maxHeight) {
-            $content.find('#SG_action_container').css('transform', `scale(${Math.min(1, (document.documentElement.clientWidth - 56) / 265)})`)
+            //$content.find('#SG_action_container').css('transform', `scale(${Math.min(1, (document.documentElement.clientWidth - 56) / 265)})`)
             $accounts.height(Math.min(document.documentElement.clientHeight - 140 - $content.find('#SG_action_container').height(), $accounts[0].scrollHeight));
 		});
         
@@ -956,7 +956,7 @@
             position: fixed; 
             right: 6px; 
             top: 50%; 
-            z-index: 500; 
+            z-index: 28; 
             color: #b8b6b4; 
             background-color: #3b4b5f; 
             font-size: 12px; 
@@ -1016,7 +1016,7 @@
             position: fixed; 
             top: 50%; 
             right: 50px; 
-            z-index: 500; 
+            z-index: 28; 
             user-select: none;
             transform: translateY(-50%);
         }
@@ -1175,15 +1175,18 @@
         }
         .SG_action_btn {
             color: white;
-            padding: 0px 10px;
             background: #464d58;
             user-select: none;
             border-radius: 4px;
             box-shadow: 1px 1px 2px #00000066;
             font-size: 14px;
             cursor: pointer;
-            display: inline-block;
+            height: 26px;
             line-height: 26px;
+            flex: auto;
+            max-width: 60px;
+            margin: 0 3px;
+            text-align: center;
         }
         .SG_action_btn:hover {
             background: #3e6994;
